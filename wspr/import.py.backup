@@ -1,0 +1,104 @@
+#!/usr/bin/python3
+
+import sys
+from datetime import datetime
+import argparse
+
+class Reader:
+    def __init__(self, file):
+        self._file=file
+
+    def read(self):
+        for line in self._file:
+            line=line.replace('\r\n',"")
+            line=line.replace('\n',"")
+            line=line.replace('\r',"")
+            values=line.split(",")
+
+            wsprLine=WsprLine(line)
+            newLine=wsprLine.getConvertedLine()
+
+            sys.stderr.write(newLine+"\n")
+            print (newLine)
+
+
+class WsprField:
+    def __init__(self,name,value):
+        self._value=value
+        self._name=name
+
+    def getName(self):
+        return self._name
+
+    def getValue(self):
+        return self._value
+    
+
+class WsprLine:
+    def __init__(self,line):
+        self._line=line
+        self._fields={}
+        
+        values=self._line.split(",")
+        
+        self._fields[0]= WsprField('spotid',values[0])
+        self._fields[1]= WsprField('timestamp',datetime.utcfromtimestamp(int(values[1])).strftime('%Y-%m-%d %H:%M:%S'))
+        self._fields[2]= WsprField('reporter',values[2])
+        self._fields[3]= WsprField('reportergrid',values[3])
+        self._fields[4]= WsprField('snr',values[4])
+        self._fields[5]= WsprField('freq',values[5])
+        self._fields[6]= WsprField('callsign',values[6])
+        self._fields[7]= WsprField('grid',values[7])
+        self._fields[8]= WsprField('power',values[8])
+        self._fields[9]= WsprField('drift',values[9])
+        self._fields[10]= WsprField('distance',values[10])
+        self._fields[11]= WsprField('azimuth',values[11])
+        self._fields[12]= WsprField('band',HamBand().getBandByFreq(values[5]) )
+        self._fields[13]= WsprField('version',values[13])
+        self._fields[14]= WsprField('code',values[14])
+        self._fields[15]= WsprField('date',datetime.utcfromtimestamp(int(values[1])).strftime('%Y-%m-%d'))
+        self._fields[16]= WsprField('time',datetime.utcfromtimestamp(int(values[1])).strftime('%H:%M:%S'))
+
+    def getConvertedLine(self):
+        fields=""
+        for key in self._fields:
+            fields+=self._fields[key].getName()+","
+
+
+        values=""
+        for key in self._fields:
+            values+=self._fields[key].getValue()+","
+
+        return "("+fields+") VALUES ("+values+")"
+    
+
+class HamBand:
+    def __init__(self):
+        self.test=""
+
+    def getBandByFreq(self, freq):
+        return "---"
+
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    
+    parser.add_argument("-f", "--file", dest="file",
+                        help="WSPR Input File", metavar="FILE")
+    parser.add_argument("-q", "--quiet",
+                        action="store_false", dest="verbose", default=True,
+                        help="don't print status messages to stdout")
+
+    args = parser.parse_args()
+    if args.file:
+        file=open(args.file,"r")
+    else:
+        file=sys.stdin
+
+    #file=open("/home/dk9mbs/wsprspots-2019-02.csv","r")
+    reader = Reader(file)
+    reader.read()
+
+
+main()
